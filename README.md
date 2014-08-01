@@ -6,8 +6,20 @@ Provides a simple connector to copy messages backwards and forwards between Yamm
 
 Download the package (or git clone or whatever)
 
-Edit the configuration
+Edit the configuration:
+```sh
+$ cp config.example.js config.js
+$ vim config.js
+```
 
+You might need to install libicu which is going to be specific to your OS
+
+For RedHat:
+```sh
+$ sudo yum install libicu-devel
+```
+
+Then install all the npm gubbins and run it:
 ```sh
 $ npm install
 $ node index.html
