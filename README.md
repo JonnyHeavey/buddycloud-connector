@@ -1,6 +1,17 @@
 # Buddycloud Yammer Connector
 
-Provides a simple connector to copy messages backwards and forwards between Yammer and Buddycloud
+Provides a simple connector to copy messages backwards and forwards between Yammer and Buddycloud.
+
+## Installation
+
+Download the package (or git clone or whatever)
+
+Edit the configuration
+
+```sh
+$ npm install
+$ node index.html
+```
 
 ## Configuration
 
