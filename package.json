@@ -1,0 +1,12 @@
+{
+  "name": "buddycloud-yammer-connector",
+  "version": "0.1.0",
+  "description": "A buddycloud <-> Yammer connector",
+  "main": "index.js",
+  "dependencies": {
+    "q": "*",
+    "xmpp-ftw": "*",
+    "xmpp-ftw-buddycloud": "*",
+    "nedb": "*"
+  }
+}
