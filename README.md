@@ -1,6 +1,6 @@
-# Buddycloud Yammer Connector
+# Buddycloud Connector
 
-Provides a simple connector to copy messages backwards and forwards between Yammer and Buddycloud.
+Provides a simple connector to copy messages backwards and forwards between Buddycloud and other stuff.
 
 ## Installation
 
@@ -29,14 +29,27 @@ $ node index.html
 
 | Config | Description |
 | ------ | ----------- |
-| `buddycloud.auth` | The authentication options to connect to your buddycloud server |
-| `yammer.authtoken` | The oauth2 authentication token to connect to Yammer. Information on how to obtain one is available here: https://developer.yammer.com/authentication/#a-testtoken |
-| `groups` | This is an array of all the groups you want mirrored. The Yammer group ids are available by logging into Yammer in your browser and then going to https://www.yammer.com/api/v1/groups.json?mine=1 |
+| `plugins` | The set of plugins to load |
+| `plugins.<plugin_name>.clazz` | The class of the plugin - this will be instatiated with `new` |
+| `plugins.<plugin_name>.config` | The plugin config which will be passed into the constructor when it's instatiated |
+| `plugins.<plugin_name>.authMapper` | An optional set of mapper functions to transform user identifiers |
+| `plugins.<plugin_name>.channelMapper` | An optional set of mapper functions to transform channel identifiers |
+| `dataDir` | The directory into which to store the NeDB data files |
 
-## Current Implementation State
+## Included Plugins
 
-There is very little functionality implemented at the moment. This is what is implemented:
+### Buddycloud Plugin
 
-### Copying messages from Buddycloud to Yammer
+#### Configuration
 
-New posts to Buddycloud are copied to the Yammer feed if there is a group set up in `config.groups`. Threading is maintained for new posts.
+| Config | Description |
+| ------ | ----------- |
+| `auth` | The authentication options to connect to your buddycloud server |
+
+### Yammer Plugin
+
+#### Configuration
+
+| Config | Description |
+| ------ | ----------- |
+| `authtoken` | The oauth2 authentication token to connect to Yammer. Information on how to obtain one is available here: https://developer.yammer.com/authentication/#a-testtoken |

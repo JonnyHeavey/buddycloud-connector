@@ -1,7 +1,4 @@
 {
-  /*** Globals ***/
-  // To ignore any custom global variables, enable the `predef` option and list
-  // your variables within it.
   "predef": [
 	  "exports",
 	  "YUITest",
@@ -21,13 +18,9 @@
 	  "window"
   ],
  
-  /*** Enforcing options ***/
-  // Set these to `true` to enforce, or `false` to relax.
   "adsafe":     false,
   "safe":       false,
  
-  /*** Relaxing options ***/
-  // Set these to `true` to relax, or `false` to enforce.
   "bitwise":    false,
   "cap":        false,
   "confusion":  true,
@@ -53,8 +46,6 @@
   "validthis":  true,
   "strict_mode":true,
  
-  /*** Environments ***/
-  // Set each environment that you're using to `true`.
   "browser":    false,
   "devel":      false,
   "node":       true,
@@ -62,7 +53,6 @@
   "widget":     false,
   "windows":    false,
  
-  /*** Miscellaneous ***/
   "indent":     4,
   "maxerr":     50,
   "maxlen":     160,
