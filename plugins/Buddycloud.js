@@ -1,21 +1,21 @@
 /*
- * Buddycloud Connector - Buddycloud Plugin
- * Copies your posts to and from Buddycloud
- *
- * Copyright 2014 Surevine Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* Buddycloud Connector - Buddycloud Plugin
+* Copies your posts to and from Buddycloud
+*
+* Copyright 2014 Surevine Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 var ftw = require('xmpp-ftw');
 var ftwbc = require('xmpp-ftw-buddycloud');
@@ -23,124 +23,217 @@ var Sockets = require('../lib/Sockets');
 var Util = require('../lib/Util');
 var Spritzr = require('spritzr');
 var events = require('events');
+var Q = require('q');
 
 var Buddycloud = function (config) {
-    this.config = config;
+  this.config = config;
 
-    this.log = config.logging.app;
+  this.log = config.logging.app;
 };
 
 Spritzr.spritz(Buddycloud, events.EventEmitter);
 
 Buddycloud.prototype.init = function () {
-    this.log.info('Initialising Buddycloud Plugin');
+  this.log.info('Initialising Buddycloud Plugin');
 
-    this.bcSockets = new Sockets();
-    this.socket = this.bcSockets.socket;
+  this.bcSockets = new Sockets();
+  this.socket = this.bcSockets.socket;
 
-    this.xmpp = new ftw.Xmpp(this.bcSockets.serverSocket);
-    this.buddycloud = new ftwbc();
+  this.xmpp = new ftw.Xmpp(this.bcSockets.serverSocket);
+  this.buddycloud = new ftwbc();
 
-    this.xmpp.addListener(this.buddycloud);
+  this.xmpp.addListener(this.buddycloud);
 
-    if (this.config.logging.xmpp) {
-        this.xmpp.setLogger(this.config.logging.xmpp);
-    }
+  if (this.config.logging.xmpp) {
+    this.xmpp.setLogger(this.config.logging.xmpp);
+  }
 
-    // Logging in kicks the whole darn thing off
-    this.socket.emit('xmpp.login', this.config.auth);
+  // Logging in kicks the whole darn thing off
+  this.socket.emit('xmpp.login', this.config.auth);
 
-    this.postsNode = '/user/' + this.config.channel + '/posts';
+  this.postsNode = '/user/' + this.config.channel + '/posts';
 
-    return Util.autoConnectBuddycloud(this.socket);
+  // The socket map stores the various user's buddycloud connections
+  this._connectionMap = {};
+
+  this._connectionMap[this.config.auth.jid] = {
+    sockets: this.bcSockets,
+    xmpp: this.xmpp,
+    buddycloud: this.buddycloud
+  };
+
+  return Util.autoConnectBuddycloud(this.socket);
 };
 
 Buddycloud.prototype.start = function () {
-    this.log.info('Starting Buddycloud Plugin');
+  this.log.info('Starting Buddycloud Plugin');
 
-    // Hook up the incoming message event
-    this.socket.on('xmpp.buddycloud.push.item', this._itemNotification.bind(this));
+  // Hook up the incoming message event
+  this.socket.on('xmpp.buddycloud.push.item', this._itemNotification.bind(this));
 };
 
 Buddycloud.prototype.sendMessage = function (data) {
-    var content = data.payload;
+  var self = this;
 
-    if (data.replyId) {
-        var splitId = Buddycloud.parseFullId(data.replyId);
+  var content = data.payload;
 
-        if(splitId) {
-            content['in-reply-to'] = {
-                "ref": splitId.id
-            };
-        }
+  if (data.replyId) {
+    var splitId = Buddycloud.parseFullId(data.replyId);
+
+    if(splitId) {
+      content['in-reply-to'] = {
+        "ref": splitId.id
+      };
     }
+  }
 
-    var node;
+  var node;
 
-    if(data.channel) {
-      node = '/user/' + data.channel + '/posts';
-    } else {
-      node = this.postsNode;
-    }
+  if(data.channel) {
+    node = '/user/' + data.channel + '/posts';
+  } else {
+    node = this.postsNode;
+  }
 
-    return this.socket.send('xmpp.buddycloud.publish', {
-        node: node,
-        content: content
-    }).then(function (newPayload) {
-        data.id = newPayload.id;
+  return this._getConnectionForUser(data.sender)
+  .then(function(connection) {
+    //        return this._createChannelIfRequired(node)
+    //          .then()
+    return connection.sockets.socket.send('xmpp.buddycloud.publish', {
+      node: node,
+      content: content
+    }).fail(function (error) {
+      var resolveFn;
 
-        return data;
+      if ((error.type === 'auth') && (error.condition === 'forbidden')) {
+        self.log.info('Forbidden from posting to ' + node + '. Attempting join channel.');
+
+        resolveFn = function () {
+          return connection.sockets.socket.send('xmpp.buddycloud.subscribe', {
+            node: node
+          });
+        };
+      } else {
+        self.log.info('Node ' + node + ' may not exist. Attempting to create it');
+
+        resolveFn = function () {
+          return connection.sockets.socket.send('xmpp.buddycloud.create', {
+            node: node,
+            options: [
+            {
+              'var': 'buddycloud#default_affiliation',
+              value: 'publisher'
+            },
+            {
+              'var': 'pubsub#access_model',
+              value: 'open'
+            },
+            {
+              'var': 'pubsub#title',
+              value: node
+            },
+            {
+              'var': 'pubsub#description',
+              value: 'Mirror of the ' + node + ' channel'
+            },
+            {
+              'var': 'buddycloud#channel_type',
+              value: 'topic'
+            }
+            ]
+          });
+        };
+      }
+
+      return resolveFn()
+      .then(function (data) {
+        return userSocket.send('xmpp.buddycloud.publish', {
+          node: node,
+          content: content
+        });
+      });
     });
+  }).then(function (newPayload) {
+    data.id = newPayload.id;
+
+    return data;
+  });
 };
 
 Buddycloud.prototype._itemNotification = function (notification) {
-    if(notification.node != this.postsNode) {
-        return;
-    }
+  var nodeArr = notification.node.split('/');
 
-    var nodeArr = notification.node.split('/');
+  var data = {
+    id: notification.id,
+    sender: notification.entry.atom.author.name,
+    channel: nodeArr[2],
+    payload: notification
+  };
 
-    var data = {
-        id: notification.id,
-        sender: notification.entry.atom.author.name,
-        channel: nodeArr[2],
-        payload: notification
-    };
+  if (notification.entry['in-reply-to']) {
+    var mainId = Buddycloud.parseFullId(notification.id);
 
-    if (notification.entry['in-reply-to']) {
-        var mainId = Buddycloud.parseFullId(notification.id);
+    data.replyId = 'tag:' + mainId.service + ',' + mainId.node + ',' + notification.entry['in-reply-to'].ref;
+  }
 
-        data.replyId = 'tag:' + mainId.service + ',' + mainId.node + ',' + notification.entry['in-reply-to'].ref;
-    }
+  this.emit('messageReceived', data);
+};
 
-    this.emit('messageReceived', data);
+Buddycloud.prototype._getConnectionForUser = function(userJid) {
+  var connection = this._connectionMap[userJid];
+
+  if(connection) {
+    return Q(connection);
+  }
+
+  connection = {};
+
+  connection.sockets = new Sockets();
+  connection.xmpp = new ftw.Xmpp(connection.sockets.serverSocket);
+  connection.buddycloud = new ftwbc();
+
+  connection.xmpp.addListener(connection.buddycloud);
+
+  if (this.config.logging.xmpp) {
+    connection.xmpp.setLogger(this.config.logging.xmpp);
+  }
+
+  // Logging in kicks the whole darn thing off
+  connection.sockets.socket.emit('xmpp.login', this.config.authFactory(userJid));
+
+  this._connectionMap[userJid] = connection;
+
+  return Util.autoConnectBuddycloud(connection.sockets.socket)
+  .then(function() {
+    return connection;
+  });
 };
 
 Buddycloud.parseNode = function(node) {
-    var matches = id.match(/^\/user\/([^\/]+)\/(\w+)$/);
+  var matches = id.match(/^\/user\/([^\/]+)\/(\w+)$/);
 
-    if(!matches) {
-        return null;
-    }
+  if(!matches) {
+    return null;
+  }
 
-    return {
-        channel: matches[1],
-        type: matches[2]
-    };
+  return {
+    channel: matches[1],
+    type: matches[2]
+  };
 };
 
 Buddycloud.parseFullId = function(id) {
-    var matches = id.match(/^tag:([^,]+),([^,]+),([^,]+)$/);
+  var matches = id.match(/^tag:([^,]+),([^,]+),([^,]+)$/);
 
-    if(!matches) {
-        return null;
-    }
+  if(!matches) {
+    return null;
+  }
 
-    return {
-        service: matches[1],
-        node: matches[2],
-        id: matches[3]
-    };
+  return {
+    service: matches[1],
+    node: matches[2],
+    id: matches[3]
+  };
 };
 
 module.exports = Buddycloud;

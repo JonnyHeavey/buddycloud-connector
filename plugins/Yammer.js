@@ -61,7 +61,7 @@ Yammer.prototype.start = function () {
 
 Yammer.prototype.sendMessage = function (data) {
     var postData = {
-        'group_id': this.config.groupId,
+        'group_id': data.channel,
         'body': data.payload.entry.atom.content.content
     };
 
