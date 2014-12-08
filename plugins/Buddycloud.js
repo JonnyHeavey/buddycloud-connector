@@ -44,6 +44,13 @@ Buddycloud.prototype.init = function () {
 
   this.xmpp.addListener(this.buddycloud);
 
+  this.socket.on('xmpp.connection', function() {
+    console.log("Connected to BC XMPP server. Sending Presence.");
+    socket.send('xmpp.presence', {
+      priority: -1
+    });
+  });
+
   if (this.config.logging.xmpp) {
     this.xmpp.setLogger(this.config.logging.xmpp);
   }
@@ -63,6 +70,8 @@ Buddycloud.prototype.init = function () {
   };
 
   return Util.autoConnectBuddycloud(this.socket);
+
+  this.log.info('Buddycloud Plugin initialised');
 };
 
 Buddycloud.prototype.start = function () {
@@ -70,6 +79,8 @@ Buddycloud.prototype.start = function () {
 
   // Hook up the incoming message event
   this.socket.on('xmpp.buddycloud.push.item', this._itemNotification.bind(this));
+
+  this.log.info('Buddycloud Plugin started');
 };
 
 Buddycloud.prototype.sendMessage = function (data) {
@@ -180,11 +191,16 @@ Buddycloud.prototype._itemNotification = function (notification) {
 };
 
 Buddycloud.prototype._getConnectionForUser = function(userJid) {
+  this.log.debug("Getting a new connection for " + userJid);
+
   var connection = this._connectionMap[userJid];
 
   if(connection) {
+    this.log.debug("Found existing connection for " + userJid);
     return Q(connection);
   }
+
+  this.log.debug("No existing connection for " + userJid + " - starting a new one");
 
   connection = {};
 
@@ -205,6 +221,7 @@ Buddycloud.prototype._getConnectionForUser = function(userJid) {
 
   return Util.autoConnectBuddycloud(connection.sockets.socket)
   .then(function() {
+    this.log.debug("Opened new connection for " + userJid);
     return connection;
   });
 };
