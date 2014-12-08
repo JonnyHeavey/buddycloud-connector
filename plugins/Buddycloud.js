@@ -34,6 +34,8 @@ var Buddycloud = function (config) {
 Spritzr.spritz(Buddycloud, events.EventEmitter);
 
 Buddycloud.prototype.init = function () {
+  var self = this;
+
   this.log.info('Initialising Buddycloud Plugin');
 
   this.bcSockets = new Sockets();
@@ -45,8 +47,8 @@ Buddycloud.prototype.init = function () {
   this.xmpp.addListener(this.buddycloud);
 
   this.socket.on('xmpp.connection', function() {
-    console.log("Connected to BC XMPP server. Sending Presence.");
-    socket.send('xmpp.presence', {
+    console.log("Sending XMPP presence.");
+    self.socket.send('xmpp.presence', {
       priority: -1
     });
   });
