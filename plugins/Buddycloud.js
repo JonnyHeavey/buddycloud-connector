@@ -193,6 +193,8 @@ Buddycloud.prototype._itemNotification = function (notification) {
 };
 
 Buddycloud.prototype._getConnectionForUser = function(userJid) {
+  var self = this;
+
   this.log.debug("Getting a new connection for " + userJid);
 
   var connection = this._connectionMap[userJid];
@@ -223,7 +225,7 @@ Buddycloud.prototype._getConnectionForUser = function(userJid) {
 
   return Util.autoConnectBuddycloud(connection.sockets.socket)
   .then(function() {
-    this.log.debug("Opened new connection for " + userJid);
+    self.log.debug("Opened new connection for " + userJid);
     return connection;
   });
 };
