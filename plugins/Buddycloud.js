@@ -100,6 +100,14 @@ Buddycloud.prototype.sendMessage = function (data) {
     }
   }
 
+  if(data.targetId) {
+    content.activity = content.activity || {};
+
+    content.activity.target = {
+      id: data.targetId
+    }
+  }
+
   var node;
 
   if(data.channel) {
@@ -187,6 +195,10 @@ Buddycloud.prototype._itemNotification = function (notification) {
     var mainId = Buddycloud.parseFullId(notification.id);
 
     data.replyId = 'tag:' + mainId.service + ',' + mainId.node + ',' + notification.entry['in-reply-to'].ref;
+  }
+
+  if(notification.entry.activity && notification.entry.activity.target && notification.entry.activity.target.id){
+    data.targetId = notification.entry.activity.target.id;
   }
 
   this.emit('messageReceived', data);

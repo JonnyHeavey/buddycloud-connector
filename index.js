@@ -1,6 +1,6 @@
 /*
- * Buddycloud Yammer Connector
- * Copies your posts between Buddycloud and Yammer
+ * Buddycloud Connector
+ * Copies your posts between Buddycloud and Other stuff
  *
  * Copyright 2014 Surevine Ltd.
  *

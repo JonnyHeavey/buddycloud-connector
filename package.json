@@ -1,6 +1,6 @@
 {
   "name": "buddycloud-connector",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A buddycloud <-> whatever connector",
   "main": "lib/Connector.js",
   "dependencies": {
