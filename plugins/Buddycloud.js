@@ -168,7 +168,7 @@ Buddycloud.prototype.sendMessage = function (data) {
 
       return resolveFn()
       .then(function (data) {
-        return userSocket.send('xmpp.buddycloud.publish', {
+        return connection.sockets.socket.send('xmpp.buddycloud.publish', {
           node: node,
           content: content
         });
@@ -208,6 +208,11 @@ Buddycloud.prototype._getConnectionForUser = function(userJid) {
   var self = this;
 
   this.log.debug("Getting a new connection for " + userJid);
+
+  if(!this.config.authFactory) {
+    this.log.debug("No authFactory - returning default connection");
+    return Q(this._connectionMap[this.config.auth.jid]);
+  }
 
   var connection = this._connectionMap[userJid];
 

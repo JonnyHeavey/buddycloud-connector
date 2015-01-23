@@ -46,6 +46,35 @@ var config = {
               })
             }
           }
+        },
+        twitter: {
+          clazz: require('./plugins/Twitter'),
+          config: {
+            auth: {
+              consumer_key:         'enter your consumer key',
+              consumer_secret:      'enter your consumer secret',
+              access_token:         'enter your access token',
+              access_token_secret:  'enter your access token secret'
+            },
+            stream: {
+              endpoint: 'statuses/filter',  // You can use other endpoints like 'statuses/firehose' if you dare!
+              params: {
+                track: 'fubar'  // Comma separated list of search terms
+              }
+            }
+          },
+          authMapper: {
+            mapIncoming: function (username) {
+              // For example - this maps a twitter '@username' to 'twitter-username@yourserver.com'
+              return 'twitter-' + username + '@yourserver.com';
+            }
+          },
+          channelMapper: {
+            mapIncoming: function (channel) {
+              // For example - this always posts tweets into the 'twitter@yourserver.com' channel
+              return 'twitter@yourserver.com';
+            }
+          }
         }
       },
       database: {

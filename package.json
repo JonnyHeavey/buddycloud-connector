@@ -1,14 +1,15 @@
 {
   "name": "buddycloud-connector",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "A buddycloud <-> whatever connector",
   "main": "lib/Connector.js",
   "dependencies": {
     "nedb": "^1.0.0",
-    "promisify-me": "^0.1.0",
+    "promisify-me": "^0.1.1",
     "q": "^1.1.2",
     "q-io": "^1.11.6",
     "spritzr": "^0.1.1",
+    "twit": "^1.1.19",
     "winston": "^0.8.3",
     "xmpp-ftw": "^1.16.8",
     "xmpp-ftw-buddycloud": "^1.16.0"
