@@ -47,8 +47,12 @@ Twitter.prototype.start = function() {
       channel: tweet.user.screen_name,
       sender: tweet.user.screen_name,
       payload: {
-        atom: {
-          content: "Tweet from @" + tweet.user.screen_name + ":\r\n" + tweet.text
+        entry: {
+          atom: {
+            content: {
+              content: "Tweet from @" + tweet.user.screen_name + ":\r\n" + tweet.text
+            }
+          }
         }
       }
     };
